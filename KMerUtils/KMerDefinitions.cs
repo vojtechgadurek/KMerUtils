@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 
 namespace KMerUtils
 {
+    //ToDo add type safety to KMer to easily see, whether they have header, if they are canonical, etc.
+
     public interface IConstant<T>
     {
         public T Get();

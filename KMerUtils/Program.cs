@@ -541,7 +541,7 @@ public static class DnaGraph
         return answer.Concat(graph).Select(x => BasicKMerOperations.GetCanonical(x, kMerLength)).ToArray();
     }
 
-    public static ulong[] RecoverGraphCanonicalV3(ulong[] graph, int kMerLength, int distanceCutoff, int minDistance)
+    public static ulong[] RecoverGraphCanonicalV3(ulong[] graph, int kMerLength, int distanceCutoff, int minDistance, bool addGraph = true)
     {
         IEnumerable<ulong> answer = new List<ulong>();
 
@@ -557,7 +557,13 @@ public static class DnaGraph
             }
             verticesFrom = notFound;
         }
-        return answer.Concat(graph).Select(x => BasicKMerOperations.GetCanonical(x, kMerLength)).ToArray();
+
+        if (addGraph)
+        {
+            answer = answer.Concat(graph);
+        }
+
+        return answer.Select(x => BasicKMerOperations.GetCanonical(x, kMerLength)).ToArray();
     }
 
     public static (List<(ulong from, ulong to)> found, List<ulong> notfound) FindVerticesInSetDistance(List<ulong> verticesFrom, ulong[] verticesTo, int distance, int kMerLength)
