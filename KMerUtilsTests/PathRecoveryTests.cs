@@ -28,6 +28,13 @@ namespace KMerUtilsTests
             ("AAA", "AAA", [], 0),
             ("AAA", "TAA", [], 1),
             ("AAAAAAAA", "TTTTTTTC", [ "CAAAAAAA", "TCAAAAAA", "TTCAAAAA", "TTTCAAAA", "TTTTCAAA", "TTTTTCAA", "TTTTTTCA"], 8),
+            ];
+
+        public static (string a, string b, string[] between, int distance, int maxDistance)[] CannonicalPathData = [
+            ("AAA", "TAA", [], 1,1),
+            ("AAA", "TTT", [], 0,3),
+            ("AAA", "AAA", [], 0,3),
+            ("AAAAAAAA", "TTTTTTTC", [], 1, 8),
 
             ];
     }
@@ -73,6 +80,33 @@ namespace KMerUtilsTests
                 foreach (var innerItem in answer.Zip(item.between))
                 {
                     Assert.Equal(innerItem.Second, BasicKMerOperations.TranslateUlongToString(innerItem.First, item.a.Length));
+                }
+
+            }
+        }
+
+        [Fact]
+
+        void TestPathRecovery()
+        {
+            foreach (var item in PathRecoveryTestData.CannonicalPathData)
+            {
+                var a = item.a.ToKMer();
+                var b = item.b.ToKMer();
+                var kMerLength = item.a.Length;
+
+                var between = item.between.Prepend(item.a).Append(item.b).Select(x => BasicKMerOperations.GetCanonical(x.ToKMer(), kMerLength).ToStringRepre(kMerLength)).ToArray();
+
+                var answer = DnaGraph.RecoverGraphCanonical([a, b], kMerLength, item.maxDistance, 0)
+
+                    .Select(x => BasicKMerOperations.GetCanonical(x, kMerLength))
+                    .ToArray();
+
+                _output.WriteLine($"a: {item.a}, b: {item.b}, distance: {item.distance}, itemsOnPath {string.Join("-", between)}, recovered: {string.Join("-", answer.Select(x => x.ToStringRepre(kMerLength)))}");
+                Assert.Equal(between.Length, answer.Length);
+                foreach (var innerItem in answer.Zip(between))
+                {
+                    Assert.Equal(innerItem.Second, BasicKMerOperations.TranslateUlongToString(innerItem.First, kMerLength));
                 }
 
             }

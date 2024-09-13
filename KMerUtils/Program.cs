@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 
 namespace KMerUtils;
@@ -6,11 +7,14 @@ public class Program
 {
     public static void Main(string[] args)
     {
+        if (args.Length == 0)
+            args = new string[] { "test-recovery", "31", "1000", "0.8", "42", "20", "100", "1" };
+
         if (args[0] == "prt-GRAPH")
         {
 
             int kMerLength = int.Parse(args[1]);
-            var (nodes, edges) = DnaGraph.CreateDNAGraph(kMerLength);
+            var (nodes, edges) = DnaGraph.CreateDNAGraphCanonical(kMerLength);
 
             Console.WriteLine("digraph G {");
             foreach (var edge in edges)
@@ -27,18 +31,54 @@ public class Program
             int nMutations = int.Parse(args[2]);
             double probability = double.Parse(args[3]);
             int seed = int.Parse(args[4]);
+            int distanceCutoff = int.Parse(args[5]);
+            int nTests = int.Parse(args[6]);
+            int minDistance = int.Parse(args[7]);
 
-            Random random = new Random(seed);
 
-            var (originalGraph, graphForRecovery) = DnaGraph.GenerateGraphForRecovery(kMerLength, nMutations, probability, random);
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
 
+            //foreach (var vertex in graphForRecovery.Select(x => BasicKMerOperations.GetCanonical(x, kMerLength)))
+            //{
+            //    Console.WriteLine(vertex.ToStringRepre(kMerLength));
+            //}
+
+            //foreach (var path in originalGraph)
+            //{
+            //    Console.WriteLine("Start of path");
+            //    foreach (var vertex in path) Console.WriteLine(vertex.ToStringRepre(kMerLength));
+            //}
+
+
+            List<(ulong, ulong, ulong)> results = new();
+
+            for (int i = 0; i < nTests; i++)
+            {
+                Random random = new Random(seed + i);
+                var (originalGraph, graphForRecovery) = DnaGraph.GenerateGraphForRecovery(kMerLength, nMutations, probability, random);
+                Console.WriteLine($"Original graph length: {originalGraph.Sum(x => x.Length)} for recovery length: {graphForRecovery.Length}");
+
+
+                var recovered = DnaGraph.RecoverGraphCanonicalV3(graphForRecovery, kMerLength, distanceCutoff, minDistance
+                    );
+                results.Add(DnaGraph.EvaluateRecovery(originalGraph.SelectMany(x => x).Select(x => BasicKMerOperations.GetCanonical(x, kMerLength)).ToArray(), recovered));
+            }
+
+            var res = results.Aggregate((0UL, 0UL, 0UL), (acc, x) => (acc.Item1 + x.Item1, acc.Item2 + x.Item2, acc.Item3 + x.Item3));
+
+            Console.WriteLine($"Correct: {(double)res.Item1 / nTests}, Missing: {(double)res.Item2 / nTests}, Wrong: {(double)res.Item3 / nTests}");
+
+            //Console.WriteLine(
+            //    $"original length: {originalGraph.Sum(x => x.Length)} for recovery length: {graphForRecovery.Length})"
+            //);
+
+            //foreach (var vertex in recovered)
+            //{
+            //    Console.WriteLine(vertex.ToStringRepre(kMerLength));
+            //}
             Console.WriteLine(
-                $"original length: {originalGraph.Sum(x => x.Length)} for recovery length: {graphForRecovery.Length})"
-            );
-
-            var recovered = DnaGraph.RecoverGraph(graphForRecovery, kMerLength, 14);
-            Console.WriteLine(
-                DnaGraph.EvaluateRecovery(originalGraph.SelectMany(x => x).Select(BasicKMerOperations.GetCanonical).ToArray(), recovered)
+                $"Time elapsed: {sw.ElapsedMilliseconds} ms"
             );
         }
     }
@@ -56,7 +96,7 @@ public static class StringKMerExtension
 public static class BasicKMerOperations
 {
     /// <summary>
-    /// Removes header from kMer
+    /// Removes header from suffix
     /// </summary>
     /// <param name="kMer"></param>
     /// <returns></returns>
@@ -66,7 +106,7 @@ public static class BasicKMerOperations
         return kMer;
     }
     /// <summary>
-    /// Add header to kMer 
+    /// Add header to suffix 
     /// </summary>
     /// <param name="kMer"></param>
     /// <returns></returns>
@@ -75,7 +115,7 @@ public static class BasicKMerOperations
         return 0b11 | (kMer << 2);
     }
     /// <summary>
-    /// Return the reverse complement of a kMer
+    /// Return the reverse complement of a suffix
     /// </summary>
     /// <param name="kMer"></param>
     /// <param name="kMerLength"></param>
@@ -93,7 +133,7 @@ public static class BasicKMerOperations
         return newKMer;
     }
     /// <summary>
-    /// Calculate reverse complement of a kMer and pick the canonical one
+    /// Calculate reverse complement of a suffix and pick the canonical one
     /// </summary>
     /// <param name="value"></param>
     /// <param name="kMerLength"></param>
@@ -119,7 +159,7 @@ public static class BasicKMerOperations
             case 1: return 'C';
             case 2: return 'G';
             case 3: return 'T';
-            default: throw new ArgumentException("Invalid kMer");
+            default: throw new ArgumentException("Invalid suffix");
         }
     }
 
@@ -131,7 +171,7 @@ public static class BasicKMerOperations
             case 'C': return 1;
             case 'G': return 2;
             case 'T': return 3;
-            default: throw new ArgumentException("Invalid kMer");
+            default: throw new ArgumentException("Invalid suffix");
         }
     }
 
@@ -147,7 +187,7 @@ public static class BasicKMerOperations
     }
 
     /// <summary>
-    /// Returns the n-th character of a kMer
+    /// Returns the n-th character of a suffix
     /// </summary>
     /// <param name="kMer"></param>
     /// <param name="kMerLength"></param>
@@ -161,7 +201,7 @@ public static class BasicKMerOperations
     }
 
     /// <summary>
-    /// Return string representation of a kMer
+    /// Return string representation of a suffix
     /// </summary>
     /// <param name="kMer"></param>
     /// <param name="kMerLength"></param>
@@ -381,7 +421,7 @@ public static class DnaGraph
         return GetPathFromAToB(from, to, kMerLength, distance);
     }
 
-    public static (HashSet<ulong>, HashSet<(ulong, ulong)>) CreateDNAGraph(int kMerLength)
+    public static (HashSet<ulong>, HashSet<(ulong, ulong)>) CreateDNAGraphCanonical(int kMerLength)
     {
         ulong nKMer = 1UL << (kMerLength * 2);
         HashSet<ulong> nodes = new HashSet<ulong>((int)nKMer);
@@ -436,7 +476,7 @@ public static class DnaGraph
         return (originalGraph, graphForRecovery);
     }
 
-    public static (ulong kMer, int distance, Direction direction) FindClosestDirected(ulong kMer, int kMerLength, ulong[] graph)
+    public static (ulong kMer, int distance, Direction direction) FindClosestDirected(ulong kMer, int kMerLength, ulong[] graph, int minDistance)
     {
         ulong closest = 0;
         int closestDistance = int.MaxValue;
@@ -451,7 +491,7 @@ public static class DnaGraph
                 continue;
             }
             var (distance, dir) = DetermineDistanceDirected(kMer, vertex, kMerLength);
-            if (distance < closestDistance)
+            if (distance < closestDistance && distance > minDistance)
             {
                 closest = vertex;
                 closestDistance = distance;
@@ -462,12 +502,12 @@ public static class DnaGraph
         return (closest, closestDistance, direction);
     }
 
-    public static ulong[] RecoverGraph(ulong[] graph, int kMerLength, int distanceCutoff)
+    public static ulong[] RecoverGraphCanonical(ulong[] graph, int kMerLength, int distanceCutoff, int minDistance)
     {
         IEnumerable<ulong> answer = new List<ulong>();
         foreach (var vertex in graph)
         {
-            var (closestKMer, distance, direction) = FindClosestDirected(vertex, kMerLength, graph);
+            var (closestKMer, distance, direction) = FindClosestDirected(vertex, kMerLength, graph, minDistance);
             if (distance > distanceCutoff)
             {
                 continue;
@@ -480,7 +520,149 @@ public static class DnaGraph
             }
             answer = answer.Concat(GetPathFromAToB(vertex, closestKMer, kMerLength, distance));
         }
-        return answer.Concat(graph).Select(BasicKMerOperations.GetCanonical).ToArray();
+        return answer.Concat(graph).Select(x => BasicKMerOperations.GetCanonical(x, kMerLength)).ToArray();
+    }
+
+    public static ulong[] RecoverGraphCanonicalV2(ulong[] graph, int kMerLength, int distanceCutoff, int minDistance)
+    {
+        IEnumerable<ulong> answer = new List<ulong>();
+
+        var distanceFinder = new DistanceFromClosestFinder(graph, kMerLength, distanceCutoff, minDistance);
+
+
+        foreach (var vertex in graph)
+        {
+            var (closestKMer, distance) = distanceFinder.FindClosest(vertex);
+            Console.WriteLine(distance);
+
+
+            answer = answer.Concat(GetPathFromAToB(vertex, closestKMer, kMerLength, distance));
+        }
+        return answer.Concat(graph).Select(x => BasicKMerOperations.GetCanonical(x, kMerLength)).ToArray();
+    }
+
+    public static ulong[] RecoverGraphCanonicalV3(ulong[] graph, int kMerLength, int distanceCutoff, int minDistance)
+    {
+        IEnumerable<ulong> answer = new List<ulong>();
+
+        ulong[] verticesTo = graph.Concat(graph.Select(x => BasicKMerOperations.GetComplement(x, kMerLength))).ToArray();
+
+        List<ulong> verticesFrom = new List<ulong>(graph);
+        for (int i = minDistance; i <= distanceCutoff; i++)
+        {
+            var (found, notFound) = FindVerticesInSetDistance(verticesFrom, verticesTo, i, kMerLength);
+            foreach (var (from, to) in found)
+            {
+                answer = answer.Concat(GetPathFromAToB(from, to, kMerLength, i));
+            }
+            verticesFrom = notFound;
+        }
+        return answer.Concat(graph).Select(x => BasicKMerOperations.GetCanonical(x, kMerLength)).ToArray();
+    }
+
+    public static (List<(ulong from, ulong to)> found, List<ulong> notfound) FindVerticesInSetDistance(List<ulong> verticesFrom, ulong[] verticesTo, int distance, int kMerLength)
+    {
+
+
+        //This implemenation is not entirely correct
+        //more vertices may have same prefix
+        //we do not care
+        Dictionary<ulong, ulong> dic = new(verticesTo.Length);
+        for (int i = 0; i < verticesTo.Length; i++)
+        {
+            var kmer = verticesTo[i];
+            var key = kmer >>> (distance * 2);
+            if (!dic.ContainsKey(key))
+            {
+                dic.Add(key, kmer);
+            }
+        }
+
+
+        List<(ulong, ulong)> found = new();
+        List<ulong> notFound = new();
+
+        ulong mask = (1UL << (int)((kMerLength - distance) * 2)) - 1;
+        foreach (var vertex in verticesFrom)
+        {
+            if (dic.TryGetValue(vertex & mask, out var value))
+            {
+                if (vertex != value)
+                {
+                    //We are not interested in finding the same vertex
+                    found.Add((value, vertex));
+                }
+                else
+                {
+                    notFound.Add(vertex);
+                }
+            }
+            else
+            {
+                notFound.Add(vertex);
+            }
+        }
+        return (found, notFound);
+    }
+
+    public class DistanceFromClosestFinder
+    {
+        readonly Dictionary<ulong, ulong>[] _buckets;
+        readonly int _maxDistance;
+        readonly int _minDistance;
+        readonly int _kMerLength;
+        public DistanceFromClosestFinder(ulong[] vertices, int kMerLength, int maxDistance, int minDistance)
+        {
+            _maxDistance = maxDistance;
+            _minDistance = minDistance;
+            _kMerLength = kMerLength;
+
+
+            _buckets = new Dictionary<ulong, ulong>[kMerLength];
+
+            for (int i = 0; i < kMerLength; i++)
+            {
+                _buckets[i] = new Dictionary<ulong, ulong>();
+            }
+
+            for (int index = 0; index < vertices.Length; index++)
+            {
+                var kMer = vertices[index];
+                var kMerComplement = BasicKMerOperations.GetComplement(kMer, kMerLength);
+                var suffix = kMer;
+                var suffixComplement = kMerComplement;
+
+                ulong mask = (1UL << (int)((kMerLength - minDistance) * 2)) - 1;
+                int counter = minDistance;
+                while (counter <= maxDistance)
+                {
+                    if (!_buckets[counter].ContainsKey(suffix & mask))
+                        _buckets[counter].Add(suffix & mask, kMer);
+                    if (!_buckets[counter].ContainsKey(suffixComplement & mask))
+                        _buckets[counter].Add(suffixComplement & mask, kMerComplement);
+                    mask >>>= 2;
+
+                    counter++;
+                }
+            }
+        }
+
+        public (ulong closest, int distance) FindClosest(ulong kMer)
+        {
+            for (int i = _minDistance; i <= _maxDistance; i++)
+            {
+                ulong mask = 1UL << (int)(_maxDistance * 2) - 1;
+                ulong suffix = kMer;
+                if (_buckets[i].ContainsKey(kMer & mask))
+                {
+                    return (_buckets[i][kMer], i);
+                }
+                mask >>>= 2;
+            }
+            return (0, -1);
+        }
+
+
     }
 
     public static (ulong correct, ulong missing, ulong wrong) EvaluateRecovery(ulong[] originalGraph, ulong[] recoveredGraph)
