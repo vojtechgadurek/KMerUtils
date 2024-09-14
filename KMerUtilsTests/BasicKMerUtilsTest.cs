@@ -5,6 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using Xunit.Abstractions;
 
+using KMerUtils.KMer;
+
 namespace KMerUtils
 {
 
@@ -56,7 +58,9 @@ namespace KMerUtils
             ("AT", "AT"),
             ("TA", "TA"),
             ("AAT", "ATT"),
-            ("CCG", "CGG")
+            ("CCG", "CGG"),
+            ("AAAAGAAAAG", "CTTTTCTTTT")
+
             ];
     }
     public class BasicKMerUtilsTest
@@ -75,7 +79,7 @@ namespace KMerUtils
             foreach (var item in BasicTestData.ShortValues.Concat(BasicTestData.LongValues))
             {
                 _output.WriteLine(item.ToString());
-                Assert.Equal(item.StringRepr, BasicKMerOperations.TranslateUlongToString(item.KMer, item.StringRepr.Length));
+                Assert.Equal(item.StringRepr, Utils.TranslateUlongToString(item.KMer, item.StringRepr.Length));
             }
         }
 
@@ -85,7 +89,7 @@ namespace KMerUtils
             foreach (var item in BasicTestData.ShortValues.Concat(BasicTestData.LongValues))
             {
                 _output.WriteLine(item.ToString());
-                Assert.Equal(item.KMer, BasicKMerOperations.TranslateStringToUlong(item.StringRepr));
+                Assert.Equal(item.KMer, Utils.TranslateStringToUlong(item.StringRepr));
             }
 
         }
@@ -96,7 +100,7 @@ namespace KMerUtils
             foreach (var item in BasicTestData.KMerWithComplement)
             {
                 _output.WriteLine(item.ToString());
-                Assert.Equal(item.Item2, BasicKMerOperations.TranslateUlongToString(BasicKMerOperations.GetComplement(item.Item1.ToKMer(), item.Item1.Length), item.Item1.Length));
+                Assert.Equal(item.Item2, Utils.TranslateUlongToString(Utils.GetComplement(item.Item1.ToKMer(), item.Item1.Length), item.Item1.Length));
             }
         }
     }

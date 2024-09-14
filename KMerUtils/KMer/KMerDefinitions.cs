@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace KMerUtils
+namespace KMerUtils.KMer
 {
     //ToDo add type safety to KMer to easily see, whether they have header, if they are canonical, etc.
 
@@ -33,7 +33,7 @@ namespace KMerUtils
         where TCanonic : struct, IConstant<bool>
     {
         public ulong Value;
-        public static readonly ulong LengthMask = (1UL << (default(TLength).Get() * 2)) - 1UL;
+        public static readonly ulong LengthMask = (1UL << default(TLength).Get() * 2) - 1UL;
         public KMer(ulong value)
         {
             Value = value;
