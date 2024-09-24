@@ -67,7 +67,7 @@ namespace KMerUtils.DNAGraph
 
                 //found.ForEach(x => Console.WriteLine((x.from.ToStringRepre(kMerLength), x.to.ToStringRepre(kMerLength), i)));
 
-                if (i == distanceCutoff) Console.WriteLine(notFound.Count);
+                //if (i == distanceCutoff) Console.WriteLine(notFound.Count);
             }
 
             if (addGraph)
@@ -77,5 +77,43 @@ namespace KMerUtils.DNAGraph
 
             return answer.Select(x => Utils.GetCanonical(x, kMerLength)).ToArray();
         }
+
+        public static IEnumerable<ulong> FindPathFromLeftEndpoint(ulong endpoint, HashSet<ulong> vertices, int maxLength, int kMerLength)
+        {
+            for (int i = 0; i < maxLength; i++)
+            {
+                yield return endpoint;
+                var answ = Utils.GetRightNeighbors(endpoint, kMerLength)
+                .Where(x => vertices.Contains(x))
+                .Select(x => (ulong?)x).FirstOrDefault();
+                if (answ is null)
+                {
+                    break;
+                }
+                endpoint = (ulong)answ;
+            }
+        }
+        public static IEnumerable<IEnumerable<ulong>> FindPaths(ulong[] graph, int kMerLength, int maxLength)
+        {
+            ulong[] graphWithComplement = graph.Concat(graph.Select(x => Utils.GetComplement(x, kMerLength))).ToArray();
+
+            //Find left endpoints
+
+            HashSet<ulong> graphWithComplementHash = new HashSet<ulong>(graphWithComplement);
+
+            var leftEndpoints =
+                graphWithComplement.Where(x =>
+                Utils.GetCanonical(x, kMerLength) == x
+                &
+                Utils.GetLeftNeighbors(x, kMerLength).All(x => !graphWithComplementHash.Contains(x)));
+
+            //Console.WriteLine($"A{leftEndpoints.Count()}");
+
+            return leftEndpoints.Select(
+                 x => FindPathFromLeftEndpoint(x, graphWithComplementHash, maxLength, kMerLength)
+                 );
+
+        }
+
     }
 }

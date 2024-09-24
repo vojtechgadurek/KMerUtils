@@ -26,6 +26,57 @@ public class Program
             Console.WriteLine("}");
         }
 
+        if (args[0] == "measure-recovery")
+        {
+            int kMerLength = int.Parse(args[1]);
+            int nMutations = int.Parse(args[2]);
+            double probability = 0;
+            int seed = int.Parse(args[4]);
+            int distanceCutoff = int.Parse(args[5]);
+            int nTests = int.Parse(args[6]);
+            int minDistance = int.Parse(args[7]);
+
+            double probabilityStep = 0.01;
+
+            while (probability < 1)
+            {
+                probability += probabilityStep;
+                List<(ulong, ulong, ulong)> results = new();
+
+                int length = 0;
+                int lengthGraphForRecovery = 0;
+                int lengthRecovered = 0;
+
+                for (int i = 0; i < nTests; i++)
+                {
+                    Random random = new Random(seed + i);
+                    var (originalGraph, graphForRecovery) = DNAGraph.Create.GenerateGraphForRecovery(kMerLength, nMutations, probability, random);
+                    //Console.WriteLine($"Original graph length: {originalGraph.Sum(x => x.Length)} for recovery length: {graphForRecovery.Length}");
+                    length += originalGraph.Sum(x => x.Length);
+                    lengthGraphForRecovery += graphForRecovery.Length;
+
+                    var recovered = DNAGraph.Recover.RecoverGraphCanonicalV3(graphForRecovery, kMerLength, distanceCutoff, minDistance
+                        );
+                    results.Add(DNAGraph.Evaluate.EvaluateRecovery(originalGraph.SelectMany(x => x).Select(x => Utils.GetCanonical(x, kMerLength)).ToArray(), recovered));
+
+                    var hashRecovered = recovered.ToHashSet();
+                    var hashGraphForRecovery = graphForRecovery.ToHashSet();
+
+                    lengthRecovered += recovered.Length;
+
+                    //DNAGraph.Recover.FindPaths(recovered, kMerLength, 100).ForEach(x => Console.WriteLine(x.Count()));
+                }
+
+                var res = results.Aggregate((0UL, 0UL, 0UL), (acc, x) => (acc.Item1 + x.Item1, acc.Item2 + x.Item2, acc.Item3 + x.Item3));
+
+                Console.WriteLine($"{probability},{(double)res.Item1 / length},{(double)res.Item2 / length},{(double)res.Item3 / length},{(double)lengthRecovered / lengthGraphForRecovery},//");
+
+
+
+            }
+
+        }
+
         if (args[0] == "test-recovery")
         {
             int kMerLength = int.Parse(args[1]);
@@ -69,6 +120,7 @@ public class Program
                 var hashGraphForRecovery = graphForRecovery.ToHashSet();
 
 
+                DNAGraph.Recover.FindPaths(recovered, kMerLength, 100).ForEach(x => Console.WriteLine(x.Count()));
 
                 //originalGraph.Take(1)
                 //    .Select(

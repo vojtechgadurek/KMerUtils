@@ -168,7 +168,7 @@ namespace KMerUtils.KMer
 
             for (ulong i = 0; i < 4; i++)
             {
-                neighbors[i] = (kMer >> 2) | (i << ((int)kMerLength * 2));
+                neighbors[i] = (kMer >> 2) | (i << (((int)kMerLength - 1) * 2));
             }
             return neighbors;
         }
