@@ -38,6 +38,7 @@ public class Program
 
             double probabilityStep = 0.01;
 
+            Console.WriteLine("Prob, Cor,  Miss, Fail, Ratio,//");
             while (probability < 1)
             {
                 probability += probabilityStep;
@@ -52,12 +53,12 @@ public class Program
                     Random random = new Random(seed + i);
                     var (originalGraph, graphForRecovery) = DNAGraph.Create.GenerateGraphForRecovery(kMerLength, nMutations, probability, random);
                     //Console.WriteLine($"Original graph length: {originalGraph.Sum(x => x.Length)} for recovery length: {graphForRecovery.Length}");
-                    length += originalGraph.Sum(x => x.Length);
+                    length += originalGraph.Sum(x => x.Item1.Length + x.Item2.Length);
                     lengthGraphForRecovery += graphForRecovery.Length;
 
                     var recovered = DNAGraph.Recover.RecoverGraphCanonicalV3(graphForRecovery, kMerLength, distanceCutoff, minDistance
                         );
-                    results.Add(DNAGraph.Evaluate.EvaluateRecovery(originalGraph.SelectMany(x => x).Select(x => Utils.GetCanonical(x, kMerLength)).ToArray(), recovered));
+                    results.Add(DNAGraph.Evaluate.EvaluateRecovery(originalGraph.SelectMany(x => x.Item1.Concat(x.Item2)).Select(x => Utils.GetCanonical(x, kMerLength)).ToArray(), recovered));
 
                     var hashRecovered = recovered.ToHashSet();
                     var hashGraphForRecovery = graphForRecovery.ToHashSet();
@@ -109,18 +110,18 @@ public class Program
             {
                 Random random = new Random(seed + i);
                 var (originalGraph, graphForRecovery) = DNAGraph.Create.GenerateGraphForRecovery(kMerLength, nMutations, probability, random);
-                Console.WriteLine($"Original graph length: {originalGraph.Sum(x => x.Length)} for recovery length: {graphForRecovery.Length}");
+                Console.WriteLine($"Original graph length: {originalGraph.Sum(x => x.Item1.Length + x.Item2.Length)} for recovery length: {graphForRecovery.Length}");
 
 
                 var recovered = DNAGraph.Recover.RecoverGraphCanonicalV3(graphForRecovery, kMerLength, distanceCutoff, minDistance
                     );
-                results.Add(DNAGraph.Evaluate.EvaluateRecovery(originalGraph.SelectMany(x => x).Select(x => Utils.GetCanonical(x, kMerLength)).ToArray(), recovered));
+                results.Add(DNAGraph.Evaluate.EvaluateRecovery(originalGraph.SelectMany(x => x.Item1.Concat(x.Item2)).Select(x => Utils.GetCanonical(x, kMerLength)).ToArray(), recovered));
 
                 var hashRecovered = recovered.ToHashSet();
                 var hashGraphForRecovery = graphForRecovery.ToHashSet();
 
 
-                DNAGraph.Recover.FindPaths(recovered, kMerLength, 100).ForEach(x => Console.WriteLine(x.Count()));
+                //DNAGraph.Recover.FindPaths(recovered, kMerLength, 100).ForEach(x => Console.WriteLine(x.Count()));
 
                 //originalGraph.Take(1)
                 //    .Select(

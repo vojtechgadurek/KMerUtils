@@ -1,10 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
+using System.Runtime.Serialization;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Channels;
 using System.Threading.Tasks;
 using KMerUtils.KMer;
-
+using FlashHash;
+using FlashHash.SchemesAndFamilies;
 
 namespace KMerUtils.DNAGraph
 {
@@ -30,6 +35,22 @@ namespace KMerUtils.DNAGraph
             return (nodes, edges);
         }
 
+        public static (ulong[], ulong[]) GenerateMutationOfRandomPath(ulong[] path)
+        {
+            ulong change = new Random().NextRandomUInt64() % 3 + 1;
+            ulong[] mutatedPath = new ulong[path.Length];
+            for (int i = 0; i < path.Length; i++)
+            {
+
+                mutatedPath[i] = path[i] ^ change;
+                change <<= 2;
+                //Console.WriteLine(path[i].ToStringRepre(31));
+                //Console.WriteLine(mutatedPath[i].ToStringRepre(31));
+            }
+
+
+            return (path, mutatedPath);
+        }
         public static ulong[] GenerateRandomPathOfFixedSize(int pathLength, int kMerLength, Random random)
         {
             ulong[] answer = new ulong[pathLength];
@@ -48,9 +69,9 @@ namespace KMerUtils.DNAGraph
             return answer;
         }
 
-        public static ulong[][] GenerateMutationGraph(int kMerLength, int nMutations, Random random)
+        public static (ulong[], ulong[])[] GenerateMutationGraph(int kMerLength, int nMutations, Random random)
         {
-            return Enumerable.Range(0, nMutations).Select(_ => GenerateRandomPathOfFixedSize(kMerLength, kMerLength, random)).ToArray();
+            return Enumerable.Range(0, nMutations).Select(_ => GenerateRandomPathOfFixedSize(kMerLength, kMerLength, random)).Select(GenerateMutationOfRandomPath).ToArray();
         }
 
         public static IEnumerable<ulong> RemoveRandomlyVerticesFromPath(IEnumerable<ulong> path, double probability, Random random)
@@ -58,10 +79,26 @@ namespace KMerUtils.DNAGraph
             return path.Where(path => random.NextDouble() > probability);
         }
 
-        public static (ulong[][] originalGraph, ulong[] graphForRecovery) GenerateGraphForRecovery(int kMerLength, int nMutations, double probability, Random random)
+        public readonly static Func<ulong, ulong> HF = new TabulationFamily().GetScheme(1000, 0).Create().Compile();
+        public static bool IsSyncMer(ulong kMer, int syncMerSize, int kMerLength)
         {
-            ulong[][] originalGraph = GenerateMutationGraph(kMerLength, nMutations, random);
-            ulong[] graphForRecovery = originalGraph.SelectMany(x => RemoveRandomlyVerticesFromPath(x, probability, random)).ToArray();
+            ulong maximum = 0;
+            ulong mask = (1UL << (syncMerSize * 2)) - 1;
+
+            for (int i = 0; i < kMerLength - syncMerSize; i++)
+            {
+                maximum = Math.Max(maximum, HF(mask & (kMer >>> (i * 2))));
+            }
+            //Console.WriteLine(maximum);
+            return (maximum == HF(mask & kMer) | (maximum == HF(kMer >> (kMerLength - syncMerSize))));
+        }
+
+        public static ((ulong[], ulong[])[] originalGraph, ulong[] graphForRecovery) GenerateGraphForRecovery(int kMerLength, int nMutations, double probability, Random random)
+        {
+            (ulong[], ulong[])[] originalGraph = GenerateMutationGraph(kMerLength, nMutations, random);
+
+
+            ulong[] graphForRecovery = originalGraph.SelectMany(x => x.Item1.Concat(x.Item2)).Where(kMer => IsSyncMer(kMer, Math.Min(kMerLength, (int)(kMerLength + 1 - 2 / (1 - probability))), kMerLength)).ToArray();
             return (originalGraph, graphForRecovery);
         }
     }

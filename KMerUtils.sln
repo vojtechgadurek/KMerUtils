@@ -5,7 +5,9 @@ VisualStudioVersion = 17.11.35222.181
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KMerUtils", "KMerUtils\KMerUtils.csproj", "{7AA9DD95-BF09-421F-96E9-456D7ADB442B}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "KMerUtilsTests", "KMerUtilsTests\KMerUtilsTests.csproj", "{C2A5FEF7-B3C7-4AA5-BDC3-FEA0E7980F8C}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "KMerUtilsTests", "KMerUtilsTests\KMerUtilsTests.csproj", "{C2A5FEF7-B3C7-4AA5-BDC3-FEA0E7980F8C}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "FlashHash", "..\FlashHash\FlashHash\FlashHash.csproj", "{7EF96CE7-B996-407F-B923-E908E3FCE95A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -21,6 +23,10 @@ Global
 		{C2A5FEF7-B3C7-4AA5-BDC3-FEA0E7980F8C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C2A5FEF7-B3C7-4AA5-BDC3-FEA0E7980F8C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C2A5FEF7-B3C7-4AA5-BDC3-FEA0E7980F8C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7EF96CE7-B996-407F-B923-E908E3FCE95A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7EF96CE7-B996-407F-B923-E908E3FCE95A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7EF96CE7-B996-407F-B923-E908E3FCE95A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7EF96CE7-B996-407F-B923-E908E3FCE95A}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

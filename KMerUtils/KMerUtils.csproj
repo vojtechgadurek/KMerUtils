@@ -7,6 +7,10 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<ProjectReference Include="..\..\FlashHash\FlashHash\FlashHash.csproj" />
+	</ItemGroup>
+
 
 
 </Project>
