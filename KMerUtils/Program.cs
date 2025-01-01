@@ -86,6 +86,7 @@ public class Program
             int distanceCutoff = int.Parse(args[5]);
             int nTests = int.Parse(args[6]);
             int minDistance = int.Parse(args[7]);
+            bool doublePath = bool.Parse(args[8]);
 
 
             Stopwatch sw = new Stopwatch();
@@ -111,7 +112,7 @@ public class Program
             for (int i = 0; i < nTests; i++)
             {
                 Random random = new Random(seed + i);
-                var (originalGraph, graphForRecovery) = DNAGraph.Create.GenerateGraphForRecovery(kMerLength, nMutations, probability, random);
+                var (originalGraph, graphForRecovery) = DNAGraph.Create.GenerateGraphForRecovery(kMerLength, nMutations, probability, random, doublePath);
                 //Console.WriteLine($"Original graph _length: {originalGraph.Sum(x => x.Item1.Length + x.Item2.Length)} for recovery _length: {graphForRecovery.Length}");
 
 

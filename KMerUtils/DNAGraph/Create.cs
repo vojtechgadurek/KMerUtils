@@ -67,9 +67,13 @@ namespace KMerUtils.DNAGraph
             return answer;
         }
 
-        public static (ulong[], ulong[])[] GenerateMutationGraph(int kMerLength, int nMutations, Random random)
+        public static (ulong[], ulong[])[] GenerateMutationGraph(int kMerLength, int nMutations, Random random, bool doublePath = true)
         {
-            return Enumerable.Range(0, nMutations).Select(_ => GenerateRandomPathOfFixedSize(kMerLength, kMerLength, random)).Select(GenerateMutationOfRandomPath).ToArray();
+            var x = Enumerable.Range(0, nMutations).
+                Select(_ => GenerateRandomPathOfFixedSize(kMerLength, kMerLength, random));
+            return doublePath ? x.Select(GenerateMutationOfRandomPath).ToArray() : x.Select((x) => (x, x)).ToArray();
+
+
         }
 
         public static IEnumerable<ulong> RemoveRandomlyVerticesFromPath(IEnumerable<ulong> path, double probability, Random random)
@@ -91,14 +95,15 @@ namespace KMerUtils.DNAGraph
             return (maximum == HF(mask & kMer) | (maximum == HF(kMer >> (kMerLength - syncMerSize))));
         }
 
-        public static ((ulong[], ulong[])[] originalGraph, ulong[] graphForRecovery) GenerateGraphForRecovery(int kMerLength, int nMutations, double probability, Random random)
+        public static ((ulong[], ulong[])[] originalGraph, ulong[] graphForRecovery) GenerateGraphForRecovery(int kMerLength, int nMutations, double probability, Random random, bool doublePath = true)
         {
-            (ulong[], ulong[])[] originalGraph = GenerateMutationGraph(kMerLength, nMutations, random);
+            (ulong[], ulong[])[] originalGraph = GenerateMutationGraph(kMerLength, nMutations, random, doublePath);
 
 
             ulong[] graphForRecovery = originalGraph.SelectMany(x => x.Item1.Concat(x.Item2)).Where(
-                //kMer => IsSyncMer(kMer, Math.Min(_kMerLength, (int)(_kMerLength + 1 - 2 / (1 - probability))), _kMerLength)
-                x => IsSyncMer(x, 25, 31)
+                //kMer => IsSyncMer(kMer, Math.Min(kMerLength, (int)(kMerLength + 1 - 2 / (1 - probability))), _kMerLength)
+                //x => IsSyncMer(x, 25, 31)
+                _ => random.NextDouble() > probability
                 ).ToArray();
             return (originalGraph, graphForRecovery);
         }
