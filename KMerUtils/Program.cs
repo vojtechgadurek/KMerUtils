@@ -60,7 +60,7 @@ public class Program
                     length += originalGraph.Sum(x => x.Item1.Length + x.Item2.Length);
                     lengthGraphForRecovery += graphForRecovery.Length;
 
-                    var recovered = DNAGraph.Recover.RecoverGraphCanonicalV3(graphForRecovery, kMerLength, distanceCutoff, minDistance
+                    var recovered = DNAGraph.Recover.RecoverGraphCanonicalV3(graphForRecovery, kMerLength, distanceCutoff, minDistance, doublePath
                         );
                     results.Add(DNAGraph.Evaluate.EvaluateRecovery(originalGraph.SelectMany(x => x.Item1.Concat(x.Item2)).Select(x => Utils.GetCanonical(x, kMerLength)).ToArray(), recovered));
 
