@@ -420,9 +420,9 @@ namespace KMerUtils.DNAGraph
 
             }
             //Console.WriteLine("E");
-            Console.WriteLine((countA, distance, "Same"));
-            Console.WriteLine((count, distance, "Mut"));
-            Console.WriteLine((countB, distance, "MutA"));
+            //Console.WriteLine((countA, distance, "Same"));
+            //Console.WriteLine((count, distance, "Mut"));
+            //Console.WriteLine((countB, distance, "MutA"));
 
 
             return (found, notFound);
