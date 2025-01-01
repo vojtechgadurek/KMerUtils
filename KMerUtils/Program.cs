@@ -32,13 +32,15 @@ public class Program
         {
             int kMerLength = int.Parse(args[1]);
             int nMutations = int.Parse(args[2]);
-            double probability = 0;
+            double probability = double.Parse(args[3]);
             int seed = int.Parse(args[4]);
             int distanceCutoff = int.Parse(args[5]);
             int nTests = int.Parse(args[6]);
             int minDistance = int.Parse(args[7]);
+            bool doublePath = bool.Parse(args[8]);
 
-            double probabilityStep = 0.01;
+
+            double probabilityStep = double.Parse(args[9]);
 
             Console.WriteLine("Prob,Cor,Miss,Fail,Ratio,");
             while (probability < 1)
