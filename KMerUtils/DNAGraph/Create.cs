@@ -37,18 +37,16 @@ namespace KMerUtils.DNAGraph
 
         public static (ulong[], ulong[]) GenerateMutationOfRandomPath(ulong[] path)
         {
-            ulong change = new Random().NextRandomUInt64() % 3 + 1;
+            ulong change = Random.Shared.NextRandomUInt64() % 3 + 1;
             ulong[] mutatedPath = new ulong[path.Length];
             for (int i = 0; i < path.Length; i++)
             {
 
                 mutatedPath[i] = path[i] ^ change;
                 change <<= 2;
-                //Console.WriteLine(path[i].ToStringRepre(31));
+                //Console.WriteLine(_path[i].ToStringRepre(31));
                 //Console.WriteLine(mutatedPath[i].ToStringRepre(31));
             }
-
-
             return (path, mutatedPath);
         }
         public static ulong[] GenerateRandomPathOfFixedSize(int pathLength, int kMerLength, Random random)
@@ -98,7 +96,10 @@ namespace KMerUtils.DNAGraph
             (ulong[], ulong[])[] originalGraph = GenerateMutationGraph(kMerLength, nMutations, random);
 
 
-            ulong[] graphForRecovery = originalGraph.SelectMany(x => x.Item1.Concat(x.Item2)).Where(kMer => IsSyncMer(kMer, Math.Min(kMerLength, (int)(kMerLength + 1 - 2 / (1 - probability))), kMerLength)).ToArray();
+            ulong[] graphForRecovery = originalGraph.SelectMany(x => x.Item1.Concat(x.Item2)).Where(
+                //kMer => IsSyncMer(kMer, Math.Min(_kMerLength, (int)(_kMerLength + 1 - 2 / (1 - probability))), _kMerLength)
+                x => IsSyncMer(x, 25, 31)
+                ).ToArray();
             return (originalGraph, graphForRecovery);
         }
     }

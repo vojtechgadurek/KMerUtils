@@ -1,5 +1,7 @@
-﻿using KMerUtils.KMer;
+﻿using KMerUtils.DNAGraph;
+using KMerUtils.KMer;
 using System.Diagnostics;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 
@@ -38,7 +40,7 @@ public class Program
 
             double probabilityStep = 0.01;
 
-            Console.WriteLine("Prob, Cor,  Miss, Fail, Ratio,//");
+            Console.WriteLine("Prob,Cor,Miss,Fail,Ratio,");
             while (probability < 1)
             {
                 probability += probabilityStep;
@@ -52,7 +54,7 @@ public class Program
                 {
                     Random random = new Random(seed + i);
                     var (originalGraph, graphForRecovery) = DNAGraph.Create.GenerateGraphForRecovery(kMerLength, nMutations, probability, random);
-                    //Console.WriteLine($"Original graph length: {originalGraph.Sum(x => x.Length)} for recovery length: {graphForRecovery.Length}");
+                    //Console.WriteLine($"Original graph _length: {originalGraph.Sum(x => x.Length)} for recovery _length: {graphForRecovery.Length}");
                     length += originalGraph.Sum(x => x.Item1.Length + x.Item2.Length);
                     lengthGraphForRecovery += graphForRecovery.Length;
 
@@ -65,15 +67,12 @@ public class Program
 
                     lengthRecovered += recovered.Length;
 
-                    //DNAGraph.Recover.FindPaths(recovered, kMerLength, 100).ForEach(x => Console.WriteLine(x.Count()));
+                    //DNAGraph.Recover.FindPaths(recovered, _kMerLength, 100).ForEach(x => Console.WriteLine(x.Count()));
                 }
 
                 var res = results.Aggregate((0UL, 0UL, 0UL), (acc, x) => (acc.Item1 + x.Item1, acc.Item2 + x.Item2, acc.Item3 + x.Item3));
 
-                Console.WriteLine($"{probability},{(double)res.Item1 / length},{(double)res.Item2 / length},{(double)res.Item3 / length},{(double)lengthRecovered / lengthGraphForRecovery},//");
-
-
-
+                Console.WriteLine($"{probability},{(double)res.Item1 / length},{(double)res.Item2 / length},{(double)res.Item3 / length},{(double)lengthRecovered / lengthGraphForRecovery},");
             }
 
         }
@@ -92,50 +91,75 @@ public class Program
             Stopwatch sw = new Stopwatch();
             sw.Start();
 
-            //foreach (var vertex in graphForRecovery.Select(x => BasicKMerOperations.GetCanonical(x, kMerLength)))
+            //foreach (var vertex in graphForRecovery.Select(x => BasicKMerOperations.GetCanonical(x, _kMerLength)))
             //{
-            //    Console.WriteLine(vertex.ToStringRepre(kMerLength));
+            //    Console.WriteLine(vertex.ToStringRepre(_kMerLength));
             //}
 
-            //foreach (var path in originalGraph)
+            //foreach (var _path in originalGraph)
             //{
-            //    Console.WriteLine("Start of path");
-            //    foreach (var vertex in path) Console.WriteLine(vertex.ToStringRepre(kMerLength));
+            //    Console.WriteLine("Start of _path");
+            //    foreach (var vertex in _path) Console.WriteLine(vertex.ToStringRepre(_kMerLength));
             //}
 
 
             List<(ulong, ulong, ulong)> results = new();
+            List<int> forRecoverySize = new();
+
+
 
             for (int i = 0; i < nTests; i++)
             {
                 Random random = new Random(seed + i);
                 var (originalGraph, graphForRecovery) = DNAGraph.Create.GenerateGraphForRecovery(kMerLength, nMutations, probability, random);
-                Console.WriteLine($"Original graph length: {originalGraph.Sum(x => x.Item1.Length + x.Item2.Length)} for recovery length: {graphForRecovery.Length}");
+                //Console.WriteLine($"Original graph _length: {originalGraph.Sum(x => x.Item1.Length + x.Item2.Length)} for recovery _length: {graphForRecovery.Length}");
 
 
-                var recovered = DNAGraph.Recover.RecoverGraphCanonicalV3(graphForRecovery, kMerLength, distanceCutoff, minDistance
-                    );
-                results.Add(DNAGraph.Evaluate.EvaluateRecovery(originalGraph.SelectMany(x => x.Item1.Concat(x.Item2)).Select(x => Utils.GetCanonical(x, kMerLength)).ToArray(), recovered));
+                var recovered = DNAGraph.Recover.RecoverGraph(graphForRecovery, kMerLength, distanceCutoff, distanceCutoff, minDistance).ToArray();
+
+                Console.WriteLine(recovered.Select(x => Utils.GetCanonical(x, kMerLength)).Count());
+
+                //var bad =
+                //                    Recover.FindPaths(recovered, _kMerLength, 100)
+                //                    .SelectMany(x => x)
+                //                    .ToArray();
+                //;
+                //Console.WriteLine(recovered.Count());
+                //Console.WriteLine(recovered.ToHashSet().Count());
+                //Console.WriteLine(bad.Count());
+
+
+
+                results.Add(DNAGraph.Evaluate
+                    .EvaluateRecovery(
+                        originalGraph
+                            .SelectMany(x => x.Item1.Concat(x.Item2))
+                            .Select(x => Utils.GetCanonical(x, kMerLength))
+                            .ToArray()
+                            , recovered.Concat(graphForRecovery).Select(x => Utils.GetCanonical(x, kMerLength))
+                            .ToArray()));
+                ;
+                forRecoverySize.Add(graphForRecovery.Count());
 
                 var hashRecovered = recovered.ToHashSet();
                 var hashGraphForRecovery = graphForRecovery.ToHashSet();
 
 
-                //DNAGraph.Recover.FindPaths(recovered, kMerLength, 100).ForEach(x => Console.WriteLine(x.Count()));
+                //DNAGraph.Recover.FindPaths(recovered, _kMerLength, 100).ForEach(x => Console.WriteLine(x.Count()));
 
                 //originalGraph.Take(1)
                 //    .Select(
-                //        path => KMerUtils.DNAGraph.Evaluate
-                //        .EvaluatePathRecovery(path, hashGraphForRecovery, hashRecovered)
-                //        .Zip(path.Select(x => x.ToCanonical(kMerLength).ToStringRepre(kMerLength))))
+                //        _path => KMerUtils.DNAGraph.Evaluate
+                //        .EvaluatePathRecovery(_path, hashGraphForRecovery, hashRecovered)
+                //        .Zip(_path.Select(x => x.ToCanonical(_kMerLength).ToStringRepre(_kMerLength))))
                 //    .ForEach(x => Console.WriteLine(string.Join("\n", x)));
 
 
-                //var path = graphForRecovery
+                //var _path = graphForRecovery
                 //    ;
 
-                //path.Select(x => (x, DNAGraph.Info.FindClosestDirected(x, kMerLength, path, minDistance)))
-                //    .ForEach(x => Console.WriteLine($"{x.x.ToStringRepre(kMerLength)}, {x.Item2.kMer.ToStringRepre(kMerLength)}, {x.Item2.distance}"));
+                //_path.Select(x => (x, DNAGraph.Info.FindClosestDirected(x, _kMerLength, _path, minDistance)))
+                //    .ForEach(x => Console.WriteLine($"{x.x.ToStringRepre(_kMerLength)}, {x.Item2.kMer.ToStringRepre(_kMerLength)}, {x.Item2.distance}"));
                 //;
 
 
@@ -144,16 +168,16 @@ public class Program
 
             var res = results.Aggregate((0UL, 0UL, 0UL), (acc, x) => (acc.Item1 + x.Item1, acc.Item2 + x.Item2, acc.Item3 + x.Item3));
 
-            Console.WriteLine($"Correct: {(double)res.Item1 / nTests}, Missing: {(double)res.Item2 / nTests}, Wrong: {(double)res.Item3 / nTests}");
+            Console.WriteLine($"Begin with: {forRecoverySize.Average()} Correct: {(double)res.Item1 / nTests}, Missing: {(double)res.Item2 / nTests}, Wrong: {(double)res.Item3 / nTests}");
 
 
             //Console.WriteLine(
-            //    $"original length: {originalGraph.Sum(x => x.Length)} for recovery length: {graphForRecovery.Length})"
+            //    $"original _length: {originalGraph.Sum(x => x.Length)} for recovery _length: {graphForRecovery.Length})"
             //);
 
             //foreach (var vertex in recovered)
             //{
-            //    Console.WriteLine(vertex.ToStringRepre(kMerLength));
+            //    Console.WriteLine(vertex.ToStringRepre(_kMerLength));
             //}
             Console.WriteLine(
                 $"Time elapsed: {sw.ElapsedMilliseconds} ms"

@@ -9,6 +9,10 @@ namespace KMerUtils.KMer
 {
     //ToDo add type safety to KMer to easily see, whether they have header, if they are canonical, etc.
 
+    public interface IKmer<T> where T : struct
+    {
+        public T Shift();
+    }
     public interface IConstant<T>
     {
         public T Get();

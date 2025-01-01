@@ -17,7 +17,7 @@ namespace KMerUtils.DNAGraph
             HashSet<ulong> recoveredGraphHashSet = new(recoveredGraph);
             HashSet<ulong> originalGraphHashSet = new(originalGraph);
 
-            foreach (var vertex in originalGraph)
+            foreach (var vertex in originalGraphHashSet)
             {
                 if (recoveredGraphHashSet.Contains(vertex))
                 {
@@ -29,7 +29,7 @@ namespace KMerUtils.DNAGraph
                 }
             }
 
-            foreach (var vertex in recoveredGraph)
+            foreach (var vertex in recoveredGraphHashSet)
             {
                 if (!originalGraphHashSet.Contains(vertex))
                 {

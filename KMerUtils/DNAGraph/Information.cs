@@ -1,7 +1,9 @@
 ﻿using KMerUtils.KMer;
+using Microsoft.CodeAnalysis;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using static KMerUtils.KMer.Utils;
@@ -26,7 +28,7 @@ namespace KMerUtils.DNAGraph
                 }
                 var (distance, dir) = DetermineDistanceDirected(kMer, vertex, kMerLength);
 
-                //Console.WriteLine($"{kMer.ToStringRepre(kMerLength)} -> {vertex.ToStringRepre(kMerLength)}: {distance} {dir}");
+                //Console.WriteLine($"{kMer.ToStringRepre(_kMerLength)} -> {vertex.ToStringRepre(_kMerLength)}: {distance} {dir}");
 
                 if (distance < closestDistance && distance >= minDistance)
                 {
@@ -41,7 +43,9 @@ namespace KMerUtils.DNAGraph
 
 
 
-        public static (List<(ulong from, ulong to)> found, List<ulong> notfound) FindVerticesInSetDistance(List<ulong> verticesFrom, ulong[] verticesTo, int distance, int kMerLength)
+        public static (List<(ulong from, ulong to)> found, List<ulong> notfound) FindVerticesInSetDistance<T1, T2>(T1 verticesFrom, T2 verticesTo, int distance, int kMerLength)
+            where T1 : IEnumerable<ulong>
+            where T2 : IEnumerable<ulong>
         {
             //Console.WriteLine(distance);
 
@@ -49,16 +53,20 @@ namespace KMerUtils.DNAGraph
             //This implemenation is not entirely correct
             //more vertices may have same prefix
             //we do not care
-            Dictionary<ulong, ulong> dic = new(verticesTo.Length);
-            for (int i = 0; i < verticesTo.Length; i++)
+
+            //AABBCC & __**** -> __BBCC
+            //BBCCAA >> 2 -> __BBCC
+            //AABBCCAA
+
+            Dictionary<ulong, ulong> dic = new();
+            foreach (var kmer in verticesTo)
             {
-                var kmer = verticesTo[i];
                 var key = kmer >>> (distance * 2);
 
                 //if (kmer == "GATATGGCAACAATATTATGTTTCCCGGATC".ToKMer())
-                //    Console.WriteLine(key.ToStringRepre(kMerLength));
+                //    Console.WriteLine(key.ToStringRepre(_kMerLength));
                 //if (kmer == "CCGGGAAACATAATATTGTTGCCATATCCGA".ToKMer())
-                //    Console.WriteLine(key.ToStringRepre(kMerLength));
+                //    Console.WriteLine(key.ToStringRepre(_kMerLength));
 
                 if (!dic.ContainsKey(key))
                 {
@@ -78,8 +86,8 @@ namespace KMerUtils.DNAGraph
             {
                 //if (vertex == "CCGGGAAACATAATATTGTTGCCATATCCGA".ToKMer())
                 //{
-                //    //Console.WriteLine(value.ToStringRepre(kMerLength) + " " + vertex.ToStringRepre(kMerLength));
-                //    Console.WriteLine((vertex & mask).ToStringRepre(kMerLength));
+                //    //Console.WriteLine(value.ToStringRepre(_kMerLength) + " " + vertex.ToStringRepre(_kMerLength));
+                //    Console.WriteLine((vertex & _mask).ToStringRepre(_kMerLength));
                 //}
 
                 if (dic.TryGetValue(vertex & mask, out var value))
@@ -309,5 +317,116 @@ namespace KMerUtils.DNAGraph
                 yield return from;
             }
         }
+
+
+        public static (List<(ulong from, ulong to)> found, List<ulong> notfound) FindVerticesInSetDistance2<T1, T2>(T1 verticesTo, T2 verticesFrom, int distance, int kMerLength)
+            where T1 : IEnumerable<ulong>
+            where T2 : IEnumerable<ulong>
+        {
+            //Console.WriteLine(distance);
+
+
+            //This implemenation is not entirely correct
+            //more vertices may have same prefix
+            //we do not care
+
+            const ulong rodeMaskFirst = 0b1100110011001100110011001100110011001100110011001100110011001100UL;
+            const ulong rodeMaskSecond = 0b0011001100110011001100110011001100110011001100110011001100110011UL;
+            const int acceptedNumberMutations = 2;
+
+            Dictionary<ulong, ulong> dicFirst = new();
+            Dictionary<ulong, ulong> dicSecond = new();
+
+            foreach (var kmer in verticesFrom)
+            {
+                var key = kmer >>> (distance * 2);
+
+                //if (kmer == "GATATGGCAACAATATTATGTTTCCCGGATC".ToKMer())
+                //    Console.WriteLine(key.ToStringRepre(_kMerLength));
+                //if (kmer == "CCGGGAAACATAATATTGTTGCCATATCCGA".ToKMer())
+                //    Console.WriteLine(key.ToStringRepre(_kMerLength));
+
+                if (!dicFirst.ContainsKey(key & rodeMaskFirst))
+                {
+                    dicFirst.Add(key & rodeMaskFirst, kmer);
+                }
+                if (!dicSecond.ContainsKey(key & rodeMaskSecond))
+                {
+                    dicSecond.Add(key & rodeMaskSecond, kmer);
+                }
+            }
+
+
+            List<(ulong, ulong)> found = new();
+            List<ulong> notFound = new();
+
+
+            ulong mask = (1UL << (int)((kMerLength - distance) * 2)) - 1;
+
+            var count = 0;
+            var countA = 0;
+            var countB = 0;
+            //Console.WriteLine("S");
+            foreach (var vertex in verticesTo)
+            {
+                //if (vertex == "CCGGGAAACATAATATTGTTGCCATATCCGA".ToKMer())
+                //{
+                //    //Console.WriteLine(value.ToStringRepre(_kMerLength) + " " + vertex.ToStringRepre(_kMerLength));
+                //    Console.WriteLine((vertex & _mask).ToStringRepre(_kMerLength));
+                //}
+
+                bool firstSucc = dicFirst.TryGetValue((vertex & mask) & rodeMaskFirst, out ulong valueFirst);
+                bool secondSucc = dicSecond.TryGetValue((vertex & mask) & rodeMaskSecond, out ulong valueSecond);
+
+                if (firstSucc == false && secondSucc == false) notFound.Add(vertex);
+
+
+                if (firstSucc != secondSucc)
+                {
+                    countB++;
+                    var succvalue = firstSucc ? valueFirst : valueSecond;
+                    var succmask = (succvalue >>> (distance * 2)) ^ (vertex & mask);
+                    //Console.WriteLine(succmask.ToStringRepre(_kMerLength));
+                    //Console.WriteLine(BitOperations.PopCount(succmask));
+
+                    if (succvalue == vertex) notFound.Add(vertex);
+                    else if (succmask > 0 && BitOperations.PopCount(succmask) <= acceptedNumberMutations)
+                    {
+                        //find where the mutation is
+                        count++;
+                        BitOperations.TrailingZeroCount(succmask);
+                        //Console.WriteLine((succvalue >>> (2 * distance)).ToStringRepre(_kMerLength));
+                        //Console.WriteLine(vertex.ToStringRepre(_kMerLength));
+                        //Console.WriteLine((vertex ^ succmask).ToStringRepre(_kMerLength));
+
+                        //Console.WriteLine(succmask.ToStringRepre(_kMerLength));
+
+                        found.Add((succvalue, vertex ^ succmask));
+                        found.Add((succvalue ^ (succmask << (2 * distance)), vertex));
+
+                    }
+                    else notFound.Add(vertex);
+                }
+
+                if (firstSucc && secondSucc)
+                {
+                    countA++;
+                    if (valueFirst != vertex) found.Add((valueFirst, vertex));
+                    else if (valueSecond != vertex) found.Add((valueSecond, vertex));
+                    else notFound.Add(vertex);
+                }
+
+
+
+            }
+            //Console.WriteLine("E");
+            Console.WriteLine((countA, distance, "Same"));
+            Console.WriteLine((count, distance, "Mut"));
+            Console.WriteLine((countB, distance, "MutA"));
+
+
+            return (found, notFound);
+        }
+
     }
 }

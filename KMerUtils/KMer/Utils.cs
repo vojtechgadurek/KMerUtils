@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 using static KMerUtils.KMer.Utils;
@@ -15,6 +16,11 @@ namespace KMerUtils.KMer
         }
 
         public static string ToStringRepre(this ulong kMer, int kMerLength)
+        {
+            return TranslateUlongToString(kMer, kMerLength);
+        }
+
+        public static string ToStringRepre(this UInt128 kMer, int kMerLength)
         {
             return TranslateUlongToString(kMer, kMerLength);
         }
@@ -99,6 +105,18 @@ namespace KMerUtils.KMer
             }
         }
 
+        public static char TranslateUlongToChar<T>(T symbol) where T : struct, IBinaryInteger<T>
+        {
+            if (symbol == T.Zero) return 'A';
+            symbol -= T.One;
+            if (symbol == T.Zero) return 'C';
+            symbol -= T.One;
+            if (symbol == T.Zero) return 'G';
+            symbol -= T.One;
+            if (symbol == T.Zero) return 'T';
+            throw new ArgumentException("Invalid suffix");
+        }
+
         public static ulong TranslateCharToUlong(char symbol)
         {
             switch (symbol)
@@ -136,6 +154,14 @@ namespace KMerUtils.KMer
             return kMer & mask;
         }
 
+        public static T GetNthCharFromKMerLeft<T>(T kMer, int kMerLength, int position) where T : IBinaryInteger<T>
+        {
+            T mask = T.CreateTruncating(3);
+
+            kMer >>= ((kMerLength - position - 1) * 2);
+            return (kMer & mask);
+        }
+
         /// <summary>
         /// Return string representation of a suffix
         /// </summary>
@@ -148,6 +174,16 @@ namespace KMerUtils.KMer
             for (int i = 0; i < kMerLength; i++)
             {
                 chars[i] = TranslateUlongToChar(GetNthCharFromKMerLeft(kMer, kMerLength, i));
+            }
+            return new string(chars);
+        }
+
+        public static string TranslateUlongToString(UInt128 kMer, int kMerLength)
+        {
+            char[] chars = new char[kMerLength];
+            for (int i = 0; i < kMerLength; i++)
+            {
+                chars[i] = TranslateUlongToChar(GetNthCharFromKMerLeft<UInt128>(kMer, kMerLength, i));
             }
             return new string(chars);
         }
