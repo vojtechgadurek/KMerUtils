@@ -531,7 +531,7 @@ namespace KMerUtils.DNAGraph
             var verticesFrom = verticesTo.ToList();
             for (int i = minDistance; i <= distanceCutoff; i++)
             {
-                var (found, notFound) = FindVerticesInSetDistance(verticesTo, verticesFrom, i, kMerLength);
+                var (found, notFound) = FindVerticesInSetDistance2(verticesTo, verticesFrom, i, kMerLength);
                 foreach (var (from, to) in found)
                 {
                     answer = answer.Concat(GetPathFromAToB(from, to, kMerLength, i));
@@ -549,7 +549,7 @@ namespace KMerUtils.DNAGraph
                 answer = answer.Concat(graph);
             }
 
-            return answer.ToArray();
+            return answer.Where(x => x.ToCanonical(kMerLength) == x).ToArray();
         }
 
         public static IEnumerable<ulong> FindPathFromLeftEndpoint(ulong endpoint, HashSet<ulong> vertices, int maxLength, int kMerLength)
