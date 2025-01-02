@@ -8,6 +8,14 @@
 	</PropertyGroup>
 
 	<ItemGroup>
+	  <None Remove="Experiments\test-graph-recovery.sh" />
+	</ItemGroup>
+
+	<ItemGroup>
+	  <Compile Include="Experiments\test-graph-recovery.sh" />
+	</ItemGroup>
+
+	<ItemGroup>
 		<ProjectReference Include="..\..\FlashHash\FlashHash\FlashHash.csproj" />
 	</ItemGroup>
 
