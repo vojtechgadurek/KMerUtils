@@ -1,3 +1,4 @@
+# bin/bash
 # Define the directory containing the files
 PATH="Results"
 
