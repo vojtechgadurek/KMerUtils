@@ -2,7 +2,6 @@ import argparse
 import pandas as pd
 import matplotlib.pyplot as plt
 
-print("hello")
 # Set up argument parser
 parser = argparse.ArgumentParser(description="Read a file and plot data.")
 parser.add_argument("filename", type=str, help="The path to the input file.")

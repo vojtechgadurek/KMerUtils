@@ -42,7 +42,7 @@ public class Program
 
             double probabilityStep = double.Parse(args[9]);
 
-            Console.WriteLine("Prob,Cor,Miss,Fail,Ratio,");
+            Console.WriteLine("Prob, Cor, Miss, Fail, Ratio, None");
             while (probability < 1)
             {
                 probability += probabilityStep;
@@ -74,7 +74,7 @@ public class Program
 
                 var res = results.Aggregate((0UL, 0UL, 0UL), (acc, x) => (acc.Item1 + x.Item1, acc.Item2 + x.Item2, acc.Item3 + x.Item3));
 
-                Console.WriteLine($"{probability},{(double)res.Item1 / length},{(double)res.Item2 / length},{(double)res.Item3 / length},{(double)lengthRecovered / lengthGraphForRecovery},");
+                Console.WriteLine($"{probability}, {(double)res.Item1 / length}, {(double)res.Item2 / length}, {(double)res.Item3 / length}, {(double)lengthRecovered / lengthGraphForRecovery}, 0");
             }
 
         }
