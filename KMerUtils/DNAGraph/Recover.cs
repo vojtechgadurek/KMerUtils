@@ -617,5 +617,35 @@ namespace KMerUtils.DNAGraph
 
             return answer.ToArray();
         }
+        public static ulong[] RecoverGraphNearlyStrongPredictor(Func<ulong, bool> isVertexInGraph, int kMerLength, ulong[] graph)
+        {
+            var allvertices = graph.Concat(graph.Select(x => Utils.GetComplement(x, kMerLength))).ToList();
+            var answer = allvertices.ToHashSet();
+
+            var count = 0;
+
+            void solveVertice(ulong vertice)
+            {
+                if (!isVertexInGraph(vertice)) return;
+                if (answer.Contains(vertice)) return;
+                answer.Add(vertice);
+                allvertices.Add(vertice);
+            }
+            while (count < allvertices.Count())
+            {
+
+                var vertice = allvertices[count++];
+                foreach (var next_ver in Utils.GetLeftNeighbors(vertice, kMerLength))
+                {
+                    solveVertice(next_ver);
+                }
+                foreach (var next_ver in Utils.GetRightNeighbors(vertice, kMerLength))
+                {
+                    solveVertice(next_ver);
+                }
+            }
+
+            return answer.Select(x => Utils.GetCanonical(x, kMerLength)).ToHashSet().ToArray();
+        }
     }
 }
