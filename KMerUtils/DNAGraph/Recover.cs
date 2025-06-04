@@ -626,6 +626,7 @@ namespace KMerUtils.DNAGraph
 
             void solveVertice(ulong vertice)
             {
+                Console.WriteLine(isVertexInGraph(vertice));
                 if (!isVertexInGraph(vertice)) return;
                 if (allvertices.Contains(vertice)) return;
                 answer.Add(vertice);
